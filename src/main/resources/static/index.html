@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MegaMart Smart Billing</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page-shell">
+    <header class="hero">
+        <div class="hero-copy">
+            <div class="brand-row">
+                <span class="brand-badge">MegaMart</span>
+                <span class="brand-subtitle">Multi-Store Retail Billing Platform</span>
+            </div>
+            <p class="eyebrow">Responsible Consumption and Production</p>
+            <h1>MegaMart Smart Billing</h1>
+        </div>
+        <div class="hero-card">
+            <p class="hero-card-title">Platform Controls</p>
+            <ul class="hero-list">
+                <li>Store Onboarding</li>
+                <li>Operator Login</li>
+                <li>Store-Wise Billing and Inventory</li>
+            </ul>
+            <p class="hero-note">Platform Admin • Store Login • Live Dashboard</p>
+        </div>
+    </header>
+
+    <section class="flow-shell">
+        <div class="flow-head">
+            <div>
+                <p class="section-tag">MegaMart Billing Workflow</p>
+                <h2>Onboard a store, sign in as that store, and process billing securely</h2>
+            </div>
+            <div class="status-wrap">
+                <button id="inventoryShortcutButton" type="button" class="secondary hidden">Update Inventory</button>
+                <span class="status-pill" id="adminStatus">Logged out</span>
+                <span class="status-pill" id="otpStatus">OTP Pending</span>
+            </div>
+        </div>
+
+        <div id="stepIndicator" class="step-indicator">
+            <div class="step-chip active" data-step-indicator="register">1. Store Onboarding</div>
+            <div class="step-chip" data-step-indicator="login">2. Store Login</div>
+            <div class="step-chip" data-step-indicator="customer">3. Customer</div>
+            <div class="step-chip" data-step-indicator="otp">4. OTP</div>
+            <div class="step-chip" data-step-indicator="products">5. Products</div>
+            <div class="step-chip" data-step-indicator="result">6. Bill Result</div>
+        </div>
+
+        <main class="wizard-layout">
+            <section class="panel step-panel active" id="step-register">
+                <div class="section-head">
+                    <div>
+                        <p class="section-tag">Step 1</p>
+                        <h2>Platform Store Onboarding</h2>
+                    </div>
+                </div>
+
+                <form id="storeForm" class="form-grid">
+                    <label>
+                        <span>Platform Admin Username</span>
+                        <input type="text" id="platformUsername" value="admin" maxlength="50" required>
+                    </label>
+                    <label>
+                        <span>Platform Admin Password</span>
+                        <input type="password" id="platformPassword" value="admin123" maxlength="60" required>
+                    </label>
+                    <label>
+                        <span>Store Name</span>
+                        <input type="text" id="storeName" placeholder="Enter supermarket name" maxlength="120" required>
+                    </label>
+                    <label>
+                        <span>Store Owner</span>
+                        <input type="text" id="storeOwner" placeholder="Enter owner or authorized person name" maxlength="100" required>
+                    </label>
+                    <label>
+                        <span>Store Phone</span>
+                        <input type="tel" id="storePhone" placeholder="Enter 10-digit store phone number" inputmode="numeric" maxlength="10" required>
+                    </label>
+                    <label>
+                        <span>Store Email</span>
+                        <input type="email" id="storeEmail" placeholder="Enter store email" maxlength="120" required>
+                    </label>
+                    <label>
+                        <span>Store Login Username</span>
+                        <input type="text" id="operatorUsername" placeholder="Create store login username" maxlength="60" required>
+                    </label>
+                    <label>
+                        <span>Store Login Password</span>
+                        <input type="password" id="operatorPassword" placeholder="Create store login password" maxlength="60" required>
+                    </label>
+                    <label class="full-width">
+                        <span>Store Address</span>
+                        <input type="text" id="storeAddress" placeholder="Enter full store address" maxlength="255" required>
+                    </label>
+                    <button type="submit" class="full-width">Create Store Account</button>
+                </form>
+                <div class="button-row">
+                    <button id="backToStoreLoginButton" type="button" class="secondary">Back to Store Login</button>
+                </div>
+                <p id="storeMessage" class="message"></p>
+
+                <div class="sub-panel">
+                    <div class="section-head compact-head">
+                        <div>
+                            <p class="section-tag">Platform View</p>
+                            <h2>Super Admin Overview</h2>
+                        </div>
+                        <button id="loadPlatformOverviewButton" type="button" class="secondary">Load Overview</button>
+                    </div>
+                    <div id="platformOverviewStats" class="dashboard-grid"></div>
+                    <div id="platformStoreList" class="history-list"></div>
+                </div>
+            </section>
+
+            <section class="panel step-panel" id="step-login">
+                <div class="section-head">
+                    <div>
+                        <p class="section-tag">Step 2</p>
+                        <h2>Store Operator Login</h2>
+                    </div>
+                </div>
+
+                <form id="loginForm" class="form-grid">
+                    <label>
+                        <span>Store Username</span>
+                        <input type="text" id="username" placeholder="Enter store login username" required>
+                    </label>
+                    <label>
+                        <span>Password</span>
+                        <input type="password" id="password" placeholder="Enter store login password" required>
+                    </label>
+                    <button type="submit" class="full-width">Sign In to Store Workspace</button>
+                </form>
+                <div class="button-row">
+                    <button id="openOnboardingButton" type="button" class="secondary">Onboard New Store</button>
+                </div>
+                <p id="loginMessage" class="message"></p>
+            </section>
+
+            <section class="panel step-panel" id="step-customer">
+                <div class="section-head">
+                    <div>
+                        <p class="section-tag">Step 3</p>
+                        <h2>Customer Profile</h2>
+                    </div>
+                </div>
+
+                <form id="customerForm" class="form-grid">
+                    <label>
+                        <span>Customer Name</span>
+                        <input
+                            type="text"
+                            id="customerName"
+                            placeholder="Enter full name"
+                            maxlength="100"
+                            autocomplete="name"
+                            required>
+                    </label>
+                    <label>
+                        <span>Phone Number</span>
+                        <input
+                            type="tel"
+                            id="customerPhone"
+                            placeholder="Enter 10-digit phone number"
+                            inputmode="numeric"
+                            maxlength="10"
+                            autocomplete="tel"
+                            required>
+                    </label>
+                    <label class="full-width">
+                        <span>Email Address</span>
+                        <input
+                            type="email"
+                            id="customerEmail"
+                            placeholder="Enter email address"
+                            maxlength="120"
+                            autocomplete="email"
+                            required>
+                    </label>
+                    <button id="saveCustomerOtpButton" type="submit" class="full-width">Save Customer and Send OTP</button>
+                </form>
+                <p id="customerMessage" class="message"></p>
+            </section>
+
+            <section class="panel step-panel" id="step-otp">
+                <div class="section-head">
+                    <div>
+                        <p class="section-tag">Step 4</p>
+                        <h2>Mobile Verification</h2>
+                    </div>
+                </div>
+
+                <div class="otp-layout">
+                    <label>
+                        <span>Enter Mobile OTP</span>
+                        <input type="text" id="otpCode" maxlength="4" placeholder="4-digit OTP">
+                    </label>
+                    <div class="otp-live-bar">
+                        <span class="otp-live-label">Code Validity</span>
+                        <span id="otpTimer" class="otp-live-value">Waiting for OTP</span>
+                    </div>
+                    <div class="button-row">
+                        <button id="verifyOtpButton" type="button">Verify Code</button>
+                        <button id="regenerateOtpButton" type="button" class="secondary">Resend OTP</button>
+                    </div>
+                    <button id="backToCustomerButton" type="button" class="secondary subtle-button">Back to Customer Profile</button>
+                </div>
+
+                <div class="demo-note">
+                    <strong>Delivery Status:</strong>
+                    <span id="generatedOtp">Waiting for OTP</span>
+                </div>
+                <p id="otpMessage" class="message"></p>
+            </section>
+
+            <section class="panel step-panel" id="step-products">
+                <div class="section-head">
+                    <div>
+                        <p class="section-tag">Step 5</p>
+                        <h2>Basket and Checkout</h2>
+                    </div>
+                    <button id="refreshProducts" type="button" class="secondary">Reload Inventory</button>
+                </div>
+
+                <div class="inventory-toolbar">
+                    <input type="search" id="productSearch" placeholder="Search products by name or category">
+                </div>
+
+                <div id="productGrid" class="product-grid"></div>
+
+                <div class="sub-panel">
+                    <div class="section-head">
+                        <div>
+                            <p class="section-tag">Current Basket</p>
+                            <h2>Checkout Summary</h2>
+                        </div>
+                    </div>
+
+                    <div id="cartSummary" class="cart-summary"></div>
+                    <div class="bill-actions">
+                        <button id="generateBillButton" type="button">Complete Billing</button>
+                        <button id="backToOtpButton" type="button" class="secondary">Back to Verification</button>
+                    </div>
+                    <p id="billMessage" class="message"></p>
+                </div>
+            </section>
+
+            <section class="panel step-panel" id="step-inventory">
+                <div class="section-head">
+                    <div>
+                        <p class="section-tag">Inventory Workspace</p>
+                        <h2>Catalog Setup and Store Inventory</h2>
+                    </div>
+                    <button id="closeInventoryButton" type="button" class="secondary">Back to Billing</button>
+                </div>
+
+                <div class="sub-panel">
+                    <div class="section-head">
+                        <div>
+                            <p class="section-tag">Catalog Setup</p>
+                            <h2>Add New Product</h2>
+                        </div>
+                    </div>
+
+                    <form id="productForm" class="inventory-form">
+                        <label>
+                            <span>Product Name</span>
+                            <input type="text" id="productNameInput" maxlength="120" placeholder="Enter product name" required>
+                        </label>
+                        <label>
+                            <span>Price</span>
+                            <input type="number" id="productPriceInput" min="1" step="0.01" placeholder="Enter selling price" required>
+                        </label>
+                        <label>
+                            <span>Upload From Gallery</span>
+                            <input type="file" id="productImageFileInput" accept=".png,.jpg,.jpeg,.webp,.gif,image/png,image/jpeg,image/webp,image/gif">
+                        </label>
+                        <label>
+                            <span>Waste Category</span>
+                            <select id="productCategoryInput" required>
+                                <option value="RECYCLABLE">RECYCLABLE</option>
+                                <option value="REUSABLE">REUSABLE</option>
+                                <option value="ECO_DISPOSAL">ECO_DISPOSAL</option>
+                            </select>
+                        </label>
+                        <label>
+                            <span>Opening Stock</span>
+                            <input type="number" id="productStockInput" min="0" placeholder="Enter opening stock" required>
+                        </label>
+                        <button type="submit">Add Product</button>
+                    </form>
+                    <div class="image-upload-help">
+                        <div id="productImagePreview" class="product-image-preview hidden">
+                            <img id="productImagePreviewImg" src="" alt="Selected product preview">
+                        </div>
+                        <p class="hint-text">Upload product images directly from your gallery. Uploaded images are stored for this store and can be reused later.</p>
+                    </div>
+                    <p id="productMessage" class="message"></p>
+                </div>
+
+                <div class="sub-panel">
+                    <div class="section-head">
+                        <div>
+                            <p class="section-tag">Product Maintenance</p>
+                            <h2>Existing Product Data Update</h2>
+                        </div>
+                    </div>
+
+                    <form id="productImageUpdateForm" class="inventory-form">
+                        <label>
+                            <span>Select Product</span>
+                            <select id="productImageUpdateProduct" required></select>
+                        </label>
+                        <label>
+                            <span>Product Name</span>
+                            <input type="text" id="productUpdateName" maxlength="120" placeholder="Update product name" required>
+                        </label>
+                        <label>
+                            <span>Price</span>
+                            <input type="number" id="productUpdatePrice" min="1" step="0.01" placeholder="Update price" required>
+                        </label>
+                        <label>
+                            <span>Waste Category</span>
+                            <select id="productUpdateCategory" required>
+                                <option value="RECYCLABLE">RECYCLABLE</option>
+                                <option value="REUSABLE">REUSABLE</option>
+                                <option value="ECO_DISPOSAL">ECO_DISPOSAL</option>
+                            </select>
+                        </label>
+                        <label>
+                            <span>Stock Quantity</span>
+                            <input type="number" id="productUpdateStock" min="0" placeholder="Update stock quantity" required>
+                        </label>
+                        <label>
+                            <span>Replace Product Image</span>
+                            <input type="file" id="productImageUpdateFileInput" accept=".png,.jpg,.jpeg,.webp,.gif,image/png,image/jpeg,image/webp,image/gif">
+                        </label>
+                        <button type="submit">Update Product Data</button>
+                    </form>
+                    <p id="productImageUpdateMessage" class="message"></p>
+                </div>
+
+                <div class="sub-panel">
+                    <div class="section-head">
+                        <div>
+                            <p class="section-tag">Store Inventory</p>
+                            <h2>Current Availability</h2>
+                        </div>
+                    </div>
+
+                    <div id="inventoryOverview" class="inventory-overview"></div>
+                    <div id="inventoryAvailability" class="inventory-availability-grid"></div>
+
+                    <form id="inventoryForm" class="inventory-form">
+                        <label>
+                            <span>Select Product</span>
+                            <select id="inventoryProduct" required></select>
+                        </label>
+                        <label>
+                            <span>Stock Quantity</span>
+                            <input type="number" id="inventoryStock" min="0" placeholder="Enter stock quantity" required>
+                        </label>
+                        <button type="submit">Update Inventory</button>
+                    </form>
+                    <p id="inventoryMessage" class="message"></p>
+                </div>
+
+                <div class="inventory-footer">
+                    <button id="closeInventoryButtonBottom" type="button" class="secondary">Back to Billing</button>
+                </div>
+            </section>
+
+            <section class="panel step-panel" id="step-result">
+                <div class="section-head">
+                    <div>
+                        <p class="section-tag">Step 6</p>
+                        <h2>Billing Completion Center</h2>
+                    </div>
+                    <div class="result-header-actions">
+                        <button id="printInvoiceButton" type="button" class="secondary">Print Invoice</button>
+                        <button id="nextCustomerButton" type="button" class="secondary">Start Next Billing</button>
+                    </div>
+                </div>
+
+                <div id="resultOverview" class="result-overview"></div>
+
+                <div class="result-layout single-column-result">
+                    <div class="result-column">
+                        <div class="section-head compact-head result-section-head">
+                            <div>
+                                <p class="section-tag">Invoice Desk</p>
+                                <h2>Invoice Details</h2>
+                            </div>
+                        </div>
+                        <div class="invoice-toolbar result-toolbar">
+                            <input type="search" id="invoiceSearch" placeholder="Search by invoice number">
+                            <button id="searchInvoiceButton" type="button" class="secondary">Find Invoice</button>
+                        </div>
+                        <div id="invoiceSuggestions" class="history-list compact-history"></div>
+                        <div id="billOutput" class="output-card">Saved bill details will be shown here.</div>
+                    </div>
+                </div>
+
+                <div class="sub-panel">
+                    <div class="section-head">
+                        <div>
+                            <p class="section-tag">Store Performance</p>
+                            <h2>Live Sales Dashboard</h2>
+                        </div>
+                        <button id="refreshDashboard" type="button" class="secondary">Refresh Dashboard</button>
+                    </div>
+
+                    <div id="dashboardStats" class="dashboard-grid"></div>
+                </div>
+
+                <div class="sub-panel">
+                    <div class="section-head">
+                        <div>
+                            <p class="section-tag">Transaction History</p>
+                            <h2>Recent Invoices</h2>
+                        </div>
+                    </div>
+
+                    <div id="recentBillsList" class="history-list"></div>
+                </div>
+            </section>
+        </main>
+    </section>
+
+    <footer class="project-footer">
+        <p>MegaMart Smart Billing</p>
+        <span>Sustainable retail checkout and billing dashboard.</span>
+    </footer>
+</div>
+<div id="smsToast" class="sms-toast hidden" role="status" aria-live="polite">
+    <div id="smsToastMessage" class="sms-toast-message"></div>
+    <div class="sms-toast-progress-track">
+        <div id="smsToastProgress" class="sms-toast-progress"></div>
+    </div>
+</div>
+<script src="script.js"></script>
+</body>
+</html>
