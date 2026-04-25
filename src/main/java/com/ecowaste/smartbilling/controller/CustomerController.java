@@ -38,7 +38,9 @@ public class CustomerController {
 
     @PostMapping("/otp/verify")
     public ResponseEntity<OtpResponse> verifyOtp(@Valid @RequestBody OtpVerifyRequest request) {
-        OtpResponse response = msg91OtpService.verifyAccessToken(request);
+        OtpResponse response = msg91OtpService.isConfigured() && request.getAccessToken() != null && !request.getAccessToken().isBlank()
+                ? msg91OtpService.verifyAccessToken(request)
+                : customerService.verifyOtp(request.getPhoneNumber(), request.getOtpCode());
         return ResponseEntity.ok(response);
     }
 

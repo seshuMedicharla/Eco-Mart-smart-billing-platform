@@ -28,27 +28,64 @@ public class CustomerService {
         String otp = String.format("%04d", random.nextInt(10000));
         LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(OTP_VALID_MINUTES);
 
-        if (!otpEmailService.isEmailOtpEnabled()) {
-            throw new IllegalStateException("Email OTP is not configured. Enable mail settings before sending verification codes.");
-        }
-
         otpStore.put(normalizedPhone, new OtpSession(otp, expiresAt, normalizedEmail));
 
-        try {
-            otpEmailService.sendOtp(normalizedEmail, otp, expiresAt);
-        } catch (Exception exception) {
-            throw new IllegalStateException("Could not send OTP email. Check mail settings and try again.");
+        if (otpEmailService.isEmailOtpEnabled()) {
+            try {
+                otpEmailService.sendOtp(normalizedEmail, otp, expiresAt);
+                return new OtpResponse(
+                        true,
+                        "Verification code sent to " + maskEmailAddress(normalizedEmail) + ". It will expire in 5 minutes.",
+                        normalizedPhone,
+                        null,
+                        maskEmailAddress(normalizedEmail),
+                        false,
+                        expiresAt
+                );
+            } catch (Exception exception) {
+                return new OtpResponse(
+                        true,
+                        "Email OTP delivery is unavailable locally. Use the generated code shown on screen. It will expire in 5 minutes.",
+                        normalizedPhone,
+                        otp,
+                        maskEmailAddress(normalizedEmail),
+                        false,
+                        expiresAt
+                );
+            }
         }
 
         return new OtpResponse(
                 true,
-                "Verification code sent to " + maskEmailAddress(normalizedEmail) + ". It will expire in 5 minutes.",
+                "Local OTP generated successfully. It will expire in 5 minutes.",
                 normalizedPhone,
-                null,
+                otp,
                 maskEmailAddress(normalizedEmail),
                 false,
                 expiresAt
         );
+    }
+
+    public OtpResponse verifyOtp(String phoneNumber, String otpCode) {
+        String normalizedPhone = normalizePhoneNumber(phoneNumber);
+        String normalizedOtp = otpCode == null ? "" : otpCode.trim();
+        OtpSession session = otpStore.get(normalizedPhone);
+
+        if (session == null) {
+            return new OtpResponse(false, "Generate OTP before verification.", normalizedPhone, null, null, false, null);
+        }
+
+        if (session.expiresAt().isBefore(LocalDateTime.now())) {
+            otpStore.remove(normalizedPhone);
+            return new OtpResponse(false, "Verification code expired. Please resend OTP.", normalizedPhone, null, null, false, null);
+        }
+
+        if (!session.code().equals(normalizedOtp)) {
+            return new OtpResponse(false, "OTP verification failed. Please enter the correct OTP and try again.", normalizedPhone, null, null, false, session.expiresAt());
+        }
+
+        otpStore.remove(normalizedPhone);
+        return new OtpResponse(true, "OTP verified successfully.", normalizedPhone, null, maskEmailAddress(session.email()), true, session.expiresAt());
     }
 
     private String normalizePhoneNumber(String phoneNumber) {

@@ -50,8 +50,12 @@ public class Msg91OtpService {
         );
     }
 
+    public boolean isConfigured() {
+        return enabled && !widgetId.isBlank() && !tokenAuth.isBlank() && !authkey.isBlank();
+    }
+
     public OtpResponse verifyAccessToken(OtpVerifyRequest request) {
-        if (!enabled || widgetId.isBlank() || tokenAuth.isBlank() || authkey.isBlank()) {
+        if (!isConfigured()) {
             throw new IllegalStateException("MSG91 OTP is not configured correctly.");
         }
 

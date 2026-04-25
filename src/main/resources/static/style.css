@@ -281,6 +281,7 @@ button {
     color: #ffffff;
     font-weight: 700;
     cursor: pointer;
+    min-height: 58px;
     box-shadow: 0 12px 24px rgba(34, 92, 58, 0.18);
     transition: transform 0.2s ease, opacity 0.2s ease;
 }
@@ -301,6 +302,10 @@ button.secondary {
     min-height: 22px;
     color: var(--primary-dark);
     font-weight: 700;
+}
+
+.hidden {
+    display: none !important;
 }
 
 .otp-layout {
@@ -333,12 +338,56 @@ button.secondary {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
+    align-items: stretch;
 }
 
 .subtle-button {
     background: transparent;
     box-shadow: none;
     border: 1px dashed rgba(47, 122, 79, 0.28);
+}
+
+.button-row {
+    width: 100%;
+}
+
+.button-row > button,
+.bill-actions > button,
+.subtle-button {
+    min-height: 64px;
+    padding-inline: 24px;
+    font-size: 1rem;
+}
+
+#backToStoreLoginButton,
+#openOnboardingButton,
+#backToCustomerButton,
+#backToOtpButton,
+#closeInventoryButton,
+#closeInventoryButtonBottom {
+    width: min(520px, 100%);
+    justify-self: start;
+}
+
+.button-row:has(> button:only-child) {
+    grid-template-columns: minmax(280px, 520px);
+}
+
+.button-row:has(> button:only-child) > button {
+    width: 100%;
+}
+
+#verifyOtpButton,
+#regenerateOtpButton,
+#generateBillButton,
+#printInvoiceButton,
+#nextCustomerButton,
+#searchInvoiceButton,
+#refreshProducts,
+#refreshDashboard,
+#inventoryShortcutButton,
+#loadPlatformOverviewButton {
+    min-width: 0;
 }
 
 .hidden {

@@ -164,19 +164,9 @@ public class BillingService {
         // Reuse a customer by phone/email so repeat billing for the same shopper stays smooth.
         Customer customer = customerRepository.findByPhoneNumberAndStoreId(normalizedPhoneNumber, storeId)
                 .or(() -> customerRepository.findByEmailAndStoreId(normalizedEmail, storeId))
-                .orElseGet(() -> customerRepository.findByEmail(normalizedEmail)
-                        .map(existingCustomer -> {
-                            Long existingStoreId = existingCustomer.getStore() != null
-                                    ? existingCustomer.getStore().getId()
-                                    : null;
-                            if (existingStoreId != null && !existingStoreId.equals(storeId)) {
-                                throw new IllegalArgumentException(
-                                        "This customer email is already linked to another store. Use a different email or continue from that store profile."
-                                );
-                            }
-                            return existingCustomer;
-                        })
-                        .orElseGet(Customer::new));
+                .or(() -> customerRepository.findByEmail(normalizedEmail)
+                        .map(existingCustomer -> validateCustomerOwnership(existingCustomer, storeId, normalizedEmail)))
+                .orElseGet(Customer::new);
 
         customer.setStore(store);
         customer.setFullName(request.getCustomer().getFullName().trim());
@@ -196,7 +186,7 @@ public class BillingService {
             savedCustomer = customerRepository.save(customer);
         } catch (DataIntegrityViolationException exception) {
             throw new IllegalArgumentException(
-                    "This customer email is already linked to another record. Reuse the same mobile/email pair or update the existing customer details."
+                    "This customer could not be saved because an older database uniqueness rule is still active. Restart the application once and try again."
             );
         }
 
@@ -448,5 +438,25 @@ public class BillingService {
         }
 
         return message.toString();
+    }
+
+    private Customer validateCustomerOwnership(Customer existingCustomer, Long storeId, String normalizedEmail) {
+        Long existingStoreId = existingCustomer.getStore() != null
+                ? existingCustomer.getStore().getId()
+                : null;
+
+        if (existingStoreId != null && !existingStoreId.equals(storeId)) {
+            Customer clonedCustomer = new Customer();
+            clonedCustomer.setFullName(existingCustomer.getFullName());
+            clonedCustomer.setPhoneNumber(existingCustomer.getPhoneNumber());
+            clonedCustomer.setEmail(normalizedEmail);
+            clonedCustomer.setOtpCode(existingCustomer.getOtpCode());
+            clonedCustomer.setOtpVerified(existingCustomer.getOtpVerified());
+            clonedCustomer.setNextDiscountEligible(existingCustomer.getNextDiscountEligible());
+            clonedCustomer.setNextDiscountPercent(existingCustomer.getNextDiscountPercent());
+            return clonedCustomer;
+        }
+
+        return existingCustomer;
     }
 }

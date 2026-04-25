@@ -13,6 +13,8 @@ public class OtpVerifyRequest {
     @Pattern(regexp = "^\\d{10}$", message = "Phone number must be exactly 10 digits")
     private String phoneNumber;
 
-    @NotBlank(message = "Access token is required")
     private String accessToken;
+
+    @Pattern(regexp = "^\\d{4}$", message = "OTP must be exactly 4 digits")
+    private String otpCode;
 }

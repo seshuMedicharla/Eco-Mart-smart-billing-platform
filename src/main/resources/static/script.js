@@ -255,13 +255,76 @@ function loadMsg91Script() {
             return;
         }
 
-        const script = document.createElement("script");
-        script.id = "msg91OtpScript";
-        script.src = "https://verify.msg91.com/otp-provider.js";
-        script.async = true;
-        script.onload = resolve;
-        script.onerror = reject;
-        document.head.appendChild(script);
+        const scriptSources = [
+            "https://verify.msg91.com/otp-provider.js",
+            "https://verify.phone91.com/otp-provider.js"
+        ];
+
+        let sourceIndex = 0;
+
+        const attachScript = () => {
+            const script = document.createElement("script");
+            script.id = "msg91OtpScript";
+            script.src = scriptSources[sourceIndex];
+            script.async = true;
+            script.onload = resolve;
+            script.onerror = () => {
+                script.remove();
+                sourceIndex += 1;
+
+                if (sourceIndex >= scriptSources.length) {
+                    reject(new Error("MSG91 OTP script could not be loaded"));
+                    return;
+                }
+
+                attachScript();
+            };
+            document.head.appendChild(script);
+        };
+
+        attachScript();
+    });
+}
+
+function waitForMsg91Callback(executor, timeoutMessage) {
+    return new Promise((resolve) => {
+        let completed = false;
+
+        const timeoutId = window.setTimeout(() => {
+            if (completed) {
+                return;
+            }
+            completed = true;
+            resolve({
+                success: false,
+                message: timeoutMessage
+            });
+        }, 15000);
+
+        executor(
+            () => {
+                if (completed) {
+                    return;
+                }
+                completed = true;
+                window.clearTimeout(timeoutId);
+                resolve({
+                    success: true,
+                    message: ""
+                });
+            },
+            (error) => {
+                if (completed) {
+                    return;
+                }
+                completed = true;
+                window.clearTimeout(timeoutId);
+                resolve({
+                    success: false,
+                    message: error?.message || timeoutMessage
+                });
+            }
+        );
     });
 }
 
@@ -497,16 +560,18 @@ async function onCustomerSaveAndGenerateOtp(event) {
         elements.saveCustomerOtpButton.textContent = "Sending OTP...";
     }
 
-    const otpSent = await new Promise((resolve) => {
+    const sendResult = await waitForMsg91Callback((onSuccess, onFailure) => {
         window.sendOtp(
             getMsg91PhoneIdentifier(),
-            () => resolve(true),
-            (error) => {
-                elements.customerMessage.textContent = error?.message || "Unable to send OTP through MSG91.";
-                resolve(false);
-            }
+            onSuccess,
+            onFailure
         );
-    });
+    }, "MSG91 OTP request timed out. Check the widget configuration, network access, and browser extensions.");
+
+    const otpSent = sendResult.success;
+    if (!otpSent) {
+        elements.customerMessage.textContent = sendResult.message;
+    }
 
     if (elements.saveCustomerOtpButton) {
         elements.saveCustomerOtpButton.disabled = false;
@@ -550,16 +615,18 @@ async function onRegenerateOtp() {
         return;
     }
 
-    const otpResent = await new Promise((resolve) => {
+    const retryResult = await waitForMsg91Callback((onSuccess, onFailure) => {
         window.retryOtp(
-            "11",
-            () => resolve(true),
-            (error) => {
-                elements.otpMessage.textContent = error?.message || "Unable to resend OTP.";
-                resolve(false);
-            }
+            null,
+            onSuccess,
+            onFailure
         );
-    });
+    }, "MSG91 OTP resend timed out. Check the widget configuration and browser network access.");
+
+    const otpResent = retryResult.success;
+    if (!otpResent) {
+        elements.otpMessage.textContent = retryResult.message;
+    }
 
     if (!otpResent) {
         return;
@@ -600,17 +667,44 @@ async function onVerifyOtp() {
     elements.otpMessage.textContent = "Verifying OTP...";
 
     const verificationResult = await new Promise((resolve) => {
+        let completed = false;
+
+        const timeoutId = window.setTimeout(() => {
+            if (completed) {
+                return;
+            }
+            completed = true;
+            resolve({
+                success: false,
+                accessToken: "",
+                message: "MSG91 OTP verification timed out. Check the widget configuration and network access."
+            });
+        }, 15000);
+
         window.verifyOtp(
             otp,
-            (data) => resolve({
-                success: true,
-                accessToken: extractMsg91AccessToken(data)
-            }),
+            (data) => {
+                if (completed) {
+                    return;
+                }
+                completed = true;
+                window.clearTimeout(timeoutId);
+                resolve({
+                    success: true,
+                    accessToken: extractMsg91AccessToken(data),
+                    message: ""
+                });
+            },
             (error) => {
-                elements.otpMessage.textContent = error?.message || "OTP verification failed.";
+                if (completed) {
+                    return;
+                }
+                completed = true;
+                window.clearTimeout(timeoutId);
                 resolve({
                     success: false,
-                    accessToken: ""
+                    accessToken: "",
+                    message: error?.message || "OTP verification failed."
                 });
             }
         );
@@ -618,7 +712,7 @@ async function onVerifyOtp() {
 
     if (!verificationResult.success) {
         state.otpVerified = false;
-        elements.otpMessage.textContent = "OTP verification failed. Please enter the correct OTP and try again.";
+        elements.otpMessage.textContent = verificationResult.message || "OTP verification failed. Please enter the correct OTP and try again.";
         renderStatus();
         return;
     }
